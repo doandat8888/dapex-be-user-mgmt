@@ -28,11 +28,10 @@ const UserSchema = mongoose.Schema({
 });
 
 //Check presave user
-UserSchema.pre('save', async(next) => {
+UserSchema.pre('save', async function(next){
     try {
-        console.log('Call before save: ', this.email, this.password);
-        const salt = bcrypt.genSalt(10);
-        const hashpassword = bcrypt.hash(this.password, salt);
+        const salt = await bcrypt.genSalt(10);
+        const hashpassword = await bcrypt.hash(this.password, salt);
         this.password = hashpassword;
         next()
     } catch (error) {
@@ -40,7 +39,7 @@ UserSchema.pre('save', async(next) => {
     }
 })
 
-UserSchema.methods.isCheckPassword = async(password) => {
+UserSchema.methods.isCheckPassword = async function(password) {
     try {
         return await bcrypt.compare(password, this.password)
     } catch (error) {

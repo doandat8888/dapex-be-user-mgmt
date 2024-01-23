@@ -21,7 +21,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 //Use router
-app.use('/api/v1/user', userRouter);
+app.use('/api/v1', userRouter);
 
 app.use((req, res, next) => {
     // const error = new Error('Not found');

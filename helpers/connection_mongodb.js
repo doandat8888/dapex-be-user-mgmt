@@ -34,7 +34,7 @@ async function connect() {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
-        console.log(`Connect successfully to ${this.name}`);
+        console.log(`Connect successfully`);
     } catch (error) {
         console.log('Connect failed because of error: ' + error);
     }
