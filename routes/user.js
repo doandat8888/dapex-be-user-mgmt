@@ -3,6 +3,7 @@ const route = express.Router();
 const createError = require('http-errors');
 const User = require('../models/user');
 const { userValidate } = require('../helpers/validation');
+const { signAccessToken } = require('../helpers/jwt_service');
 
 route.post('/login', async (req, res, next) => {
     const { email, password } = req.body;
@@ -12,25 +13,28 @@ route.post('/login', async (req, res, next) => {
             msg: 'Missing email or password'
         })
     }
-    const userEmail = await User.findOne({
+    const user = await User.findOne({
         email: email
     })
-    if (!userEmail) {
+    if (!user) {
         return res.status(400).json({
             msg: "Email is not existed"
         })
     }
-    const user = await User.findOne({
-        email: email,
-        password: password
-    })
-    if (!user) {
+    // const user = await User.findOne({
+    //     email: email,
+    //     password: password
+    // })
+    const isValidPassword = await user.isCheckPassword(password);
+    if (!isValidPassword) {
         return res.status(400).json({
             msg: "Wrong password"
         })
     }
+
+    const accessToken = await signAccessToken(user._id);
     return res.status(200).json({
-        data: user
+        accessToken: accessToken
     })
 });
 
@@ -52,13 +56,24 @@ route.post('/register', async (req, res, next) => {
             email: email
         })
         if (isExist) throw createError.Conflict('Email has already existed')
-        const isCreate = await User.create({
+        // const isCreate = await User.create({
+        //     email,
+        //     password,
+        //     name,
+        //     avt: avt ? avt : '',
+        //     role: 'member'
+        // })
+
+        const user = new User({
             email,
             password,
             name,
             avt: avt ? avt : '',
-            role: 'member'
+            role: "member"
         })
+
+        const isCreate = await user.save();
+
         if (isCreate) {
             return res.json({
                 msg: "Create user successfully"
