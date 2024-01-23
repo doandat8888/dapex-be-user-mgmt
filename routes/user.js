@@ -2,9 +2,11 @@ const express = require('express');
 const route = express.Router();
 const createError = require('http-errors');
 const User = require('../models/user');
+const { userValidate } = require('../helpers/validation');
 
 route.post('/login', async (req, res, next) => {
     const { email, password } = req.body;
+
     if (!email || !password) {
         return res.json({
             msg: 'Missing email or password'
@@ -34,8 +36,14 @@ route.post('/login', async (req, res, next) => {
 
 route.post('/register', async (req, res, next) => {
     try {
-        const { email, password, name, avt } = req.body;
-        if (!email || !password || !name) {
+        const { email, password, name, avt } = req.body
+        // if (!email || !password || !name) {
+        //     return res.status(400).json({
+        //         msg: 'Missing user information'
+        //     })
+        // }
+        const { error } = userValidate(req.body);
+        if(error) {
             return res.status(400).json({
                 msg: 'Missing user information'
             })
@@ -57,7 +65,7 @@ route.post('/register', async (req, res, next) => {
             })
         }
     } catch (error) {
-        next(error);
+        next(error)
     }
 
 })
