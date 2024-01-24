@@ -5,7 +5,7 @@ const signAccessToken = async(userId) => {
         const payload = {userId}
         const secret = process.env.ACCESS_TOKEN_SECRET
         const options = {
-            expiresIn: '10s'
+            expiresIn: '1h'
         }
 
         JWT.sign(payload, secret, options, (err, token) => {
@@ -15,7 +15,7 @@ const signAccessToken = async(userId) => {
     })
 }
 
-const verifyAccessToken = (req, res, next) => {
+const verifyAccessTokenMiddleWare = (req, res, next) => {
     if(!req.headers['authorization']) {
         return res.status(400).json({
             msg: "No bearer token provided"
@@ -67,9 +67,21 @@ const verifyRefreshToken = async(refreshToken) => {
     })
 }
 
+const verifyAccessToken = async(accessToken) => {
+    return new Promise((resolve, reject) => {
+        JWT.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, payload) => {
+            if(err) {
+                return reject(err);
+            }
+            resolve(payload);
+        })
+    })
+}
+
 module.exports = {
     signAccessToken,
-    verifyAccessToken,
+    verifyAccessTokenMiddleWare,
     signRefreshToken,
-    verifyRefreshToken
+    verifyRefreshToken,
+    verifyAccessToken
 }

@@ -1,6 +1,6 @@
 const User = require('../models/user');
 const { userValidate } = require('../helpers/validation');
-const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../helpers/jwt_service');
+const { signAccessToken, signRefreshToken, verifyRefreshToken, verifyAccessToken } = require('../helpers/jwt_service');
 
 module.exports = {
     register: async (req, res, next) => {
@@ -25,9 +25,9 @@ module.exports = {
                 avt: avt ? avt : '',
                 role: "member"
             })
-    
+
             const isCreate = await user.save();
-    
+
             if (isCreate) {
                 return res.json({
                     msg: "Create user successfully"
@@ -36,12 +36,12 @@ module.exports = {
         } catch (error) {
             next(error)
         }
-    
+
     },
     login: async (req, res, next) => {
         try {
             const { email, password } = req.body;
-    
+
             if (!email || !password) {
                 return res.json({
                     msg: 'Missing email or password'
@@ -61,7 +61,7 @@ module.exports = {
                     msg: "Wrong password"
                 })
             }
-    
+
             const accessToken = await signAccessToken(user._id);
             const refreshToken = await signRefreshToken(user._id);
             return res.status(200).json({
@@ -97,9 +97,34 @@ module.exports = {
         } catch (error) {
             next(error)
         }
-    
+
     },
     logout: (req, res, next) => {
         res.send('Logout func');
     },
+    getCurrentUser: async (req, res, next) => {
+        if(!req.headers['authorization']) {
+            return res.status(400).json({
+                msg: "No bearer token provided"
+            })
+        }
+        const authHeader = req.headers['authorization'];
+        const bearerToken = authHeader.split(' ');
+        const token = bearerToken[1];
+        try {
+            const payload = await verifyAccessToken(token);
+            const { userId } = payload;
+            const user = await User.findOne({
+                _id: userId
+            });
+            if(user) {
+                return res.status(200).json({
+                    data: user
+                })
+            }
+        } catch (error) {
+            next(error);
+        }
+
+    }
 }
