@@ -38,7 +38,7 @@ module.exports = {
         }
 
     },
-    login: async (req, res, next) => {
+    login: async (req, res) => {
         try {
             const { email, password } = req.body;
 
@@ -69,7 +69,48 @@ module.exports = {
                 refreshToken
             })
         } catch (error) {
-            next(error);
+            return res.status(400).json({msg: "Internal server error"})
+        }
+    },
+    loginGRPC: async (call, callback) => {
+        const request = call.request;
+        const { email, password } = request;
+
+        try {
+            if (!email || !password) {
+                return callback({
+                    code: grpc.status.INVALID_ARGUMENT,
+                    message: 'Missing email or password'
+                });
+            }
+
+            const user = await User.findOne({ email });
+
+            if (!user) {
+                return callback({
+                    code: grpc.status.NOT_FOUND,
+                    message: "Email is not existed"
+                });
+            }
+
+            const isValidPassword = await user.isCheckPassword(password);
+
+            if (!isValidPassword) {
+                return callback({
+                    code: grpc.status.PERMISSION_DENIED,
+                    message: "Wrong password"
+                });
+            }
+
+            const accessToken = await signAccessToken(user._id);
+            const refreshToken = await signRefreshToken(user._id);
+
+            callback(null, { accessToken, refreshToken });
+        } catch (error) {
+            callback({
+                code: grpc.status.INTERNAL,
+                message: 'Internal server error'
+            });
         }
     },
     getListUser: async (req, res, next) => {
@@ -103,7 +144,7 @@ module.exports = {
         res.send('Logout func');
     },
     getCurrentUser: async (req, res, next) => {
-        if(!req.headers['authorization']) {
+        if (!req.headers['authorization']) {
             return res.status(400).json({
                 msg: "No bearer token provided"
             })
@@ -117,7 +158,7 @@ module.exports = {
             const user = await User.findOne({
                 _id: userId
             });
-            if(user) {
+            if (user) {
                 return res.status(200).json({
                     data: user
                 })
